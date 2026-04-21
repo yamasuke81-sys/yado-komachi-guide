@@ -26,7 +26,8 @@
     body {
       font-family: "Noto Sans JP", -apple-system, system-ui, sans-serif;
       color: var(--ink);
-      line-height: 1.8;
+      font-size: 17px;
+      line-height: 1.85;
       background:
         radial-gradient(ellipse at 95% 5%, rgba(255,255,255,0.6), transparent 55%),
         linear-gradient(225deg, #faf3e4 0%, #f6e9c2 45%, #f4cf3a 100%);
@@ -310,6 +311,30 @@
     .img-single .photo { max-width: 440px; aspect-ratio: 4/3; }
     .img-single .photo.wide { aspect-ratio: 21/9; max-width: 640px; }
 
+    .photo img { cursor: zoom-in; }
+
+    /* ===== Lightbox ===== */
+    .lightbox {
+      position: fixed; inset: 0;
+      background: rgba(20,15,5,0.92);
+      display: none; z-index: 1000;
+      padding: 20px;
+      cursor: zoom-out;
+    }
+    .lightbox.open { display: flex; align-items: center; justify-content: center; }
+    .lightbox img {
+      max-width: 100%; max-height: 100%;
+      object-fit: contain; border-radius: 8px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+    .lightbox .lb-close {
+      position: absolute; top: 16px; right: 16px;
+      width: 40px; height: 40px; border-radius: 50%;
+      background: rgba(255,255,255,0.15); border: none;
+      color: #fff; font-size: 22px; cursor: pointer;
+      backdrop-filter: blur(8px);
+    }
+
     /* ===== マーカー (円) ===== */
     .marker {
       position: absolute;
@@ -394,7 +419,7 @@
       border-radius: 12px; padding: 14px 16px;
     }
     .rule-title {
-      font-weight: 700; font-size: 14px; margin-bottom: 8px;
+      font-weight: 700; font-size: 15.5px; margin-bottom: 8px;
       display: flex; align-items: center; gap: 8px;
     }
     .rule-title .badge-icon {
@@ -402,7 +427,7 @@
       background: var(--yellow); color: var(--ink);
       display: grid; place-items: center; font-size: 13px;
     }
-    .rule p { margin: 0 0 6px; font-size: 13.5px; }
+    .rule p { margin: 0 0 6px; font-size: 15px; }
     .rule.fine { border-color: var(--accent); background: rgba(244,207,58,0.12); }
 
     /* ===== お問合せ ===== */
@@ -439,6 +464,11 @@
   </style>
 </head>
 <body>
+
+<div class="lightbox" id="lightbox">
+  <button class="lb-close" aria-label="閉じる"><i class="bi bi-x-lg"></i></button>
+  <img src="" alt="">
+</div>
 
 <div class="lang-switch">
   <button class="active" data-lang="ja">日本語</button>
@@ -716,6 +746,9 @@
         <p class="jp">カギをロビーの704のポストに戻してください。</p>
         <p class="jp">ポストは必ずダイヤルを回し、施錠状態にしてください。</p>
         <p class="en-only">Return the key to the mailbox of Room 704. Spin the dial to lock it.</p>
+        <div class="img-single">
+          <div class="photo wide"><img src="img/image14.png" alt="ポストを閉める"></div>
+        </div>
       </div>
     </div>
   </section>
@@ -810,8 +843,8 @@
 
       <div class="rule">
         <div class="rule-title"><span class="badge-icon"><i class="bi bi-door-closed"></i></span><span class="jp">外出時の戸締り・セキュリティ</span><span class="en-only">Security</span></div>
-        <p class="jp">在室時・就寝時はドアのカギを、外出時は窓も閉めてください。ロビーはオートロック式です。外出時は必ずカギをお持ちください。</p>
-        <p class="en-only">Lock the door when inside and while sleeping. Close the windows before leaving. The lobby auto-locks — always carry your key.</p>
+        <p class="jp">在室時・就寝時はドアのカギを、外出時は窓も閉めてください。ロビーはオートロック式です。外出時は必ずカギを持ち出し、一階ロビーのポストに入れてください。</p>
+        <p class="en-only">Lock the door when inside and while sleeping. Close the windows before leaving. The lobby auto-locks. When going out, always take the key and place it in the 1F lobby mailbox.</p>
       </div>
 
       <div class="rule">
@@ -885,6 +918,21 @@
       btn.classList.add('active');
       document.body.classList.toggle('lang-en', btn.dataset.lang === 'en');
     });
+  });
+
+  // Lightbox
+  const lb = document.getElementById('lightbox');
+  const lbImg = lb.querySelector('img');
+  document.querySelectorAll('.photo img').forEach(img => {
+    img.addEventListener('click', () => {
+      lbImg.src = img.src;
+      lbImg.alt = img.alt || '';
+      lb.classList.add('open');
+    });
+  });
+  lb.addEventListener('click', () => lb.classList.remove('open'));
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') lb.classList.remove('open');
   });
 
   document.querySelectorAll('.btn-copy').forEach(btn => {
