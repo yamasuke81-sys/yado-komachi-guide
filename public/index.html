@@ -329,6 +329,11 @@
       object-fit: contain; border-radius: 8px;
       box-shadow: 0 20px 60px rgba(0,0,0,0.5);
     }
+    .lightbox img.rot-cw {
+      transform: rotate(90deg);
+      max-width: 90vh;
+      max-height: 90vw;
+    }
     .lightbox .lb-close {
       position: absolute; top: 16px; right: 16px;
       width: 40px; height: 40px; border-radius: 50%;
@@ -585,10 +590,11 @@
       <div class="step-body">
         <p class="jp">建物1階のポストコーナーに向かってください。</p>
         <p class="en-only">Please go to the mailboxes on the first floor.</p>
-        <div class="img-grid cols-3">
+        <div class="img-grid cols-2">
           <div class="photo"><img src="img/image9.png" alt="建物外観"></div>
           <div class="photo"><img src="img/image10.png" alt="入口"></div>
           <div class="photo"><img src="img/image15.png" alt="ポストコーナー"></div>
+          <div class="photo"><img src="img/image14.png" alt="ポスト"></div>
         </div>
       </div>
     </div>
@@ -929,6 +935,7 @@
     img.addEventListener('click', () => {
       lbImg.src = img.src;
       lbImg.alt = img.alt || '';
+      lbImg.classList.toggle('rot-cw', img.classList.contains('rot-cw'));
       lb.classList.add('open');
     });
   });
