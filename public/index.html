@@ -379,6 +379,52 @@
       z-index: 3;
     }
 
+    /* ===== 専用駐車場割当カード（動的表示） ===== */
+    .allocation-card {
+      display: none;
+      margin: 18px 0 20px;
+      padding: 18px 20px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #fff7ed, #ffedd5);
+      border: 2px solid #f59e0b;
+      box-shadow: 0 4px 14px rgba(245,158,11,0.18);
+    }
+    .allocation-card.show { display: block; }
+    .allocation-card h3 {
+      margin: 0 0 12px;
+      font-size: 18px;
+      color: #b45309;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .allocation-card .alloc-meta {
+      font-size: 13px; color: #78350f; margin-bottom: 10px;
+    }
+    .allocation-card ul {
+      list-style: none; padding: 0; margin: 0;
+      display: grid; gap: 8px;
+    }
+    .allocation-card li {
+      padding: 10px 14px;
+      background: #fff;
+      border-radius: 10px;
+      border: 1px solid #fed7aa;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .allocation-card .spot-name {
+      font-weight: 700; color: #b45309; min-width: 7em;
+    }
+    .allocation-card .spot-label {
+      color: #1f2937; font-size: 14px;
+    }
+    .allocation-extras {
+      margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px;
+    }
+    .allocation-extras .badge {
+      background: #10b981; color: #fff;
+      padding: 4px 10px; border-radius: 999px;
+      font-size: 12px; font-weight: 600;
+    }
+
     /* ===== 駐車場マップ ===== */
     .map-wrap {
       position: relative;
@@ -545,6 +591,14 @@
         <h2 class="en-only">Parking Information</h2>
       </div>
     </div>
+    <!-- 予約者専用の駐車場割当カード（?guest=TOKEN がある場合のみ動的表示） -->
+    <div id="allocation-card" class="allocation-card" aria-hidden="true">
+      <h3><i class="bi bi-p-square-fill"></i><span>🅿️ あなた専用の駐車場割当</span></h3>
+      <div class="alloc-meta" id="allocation-meta"></div>
+      <ul id="allocation-list"></ul>
+      <div class="allocation-extras" id="allocation-extras"></div>
+    </div>
+
     <p class="jp">専用駐車場はございません。下記マップ内の近隣コインパーキングをご利用ください。</p>
     <p class="en-only">There is no designated parking. Please use the nearby coin-operated parking lots shown on the map below.</p>
 
@@ -974,6 +1028,77 @@
       } catch (e) { console.warn('copy failed', e); }
     });
   });
+
+  // ===== 予約者専用: 駐車場割当カード動的表示 =====
+  // URL の ?guest=TOKEN を読み、minpaku-v2 の公開 API から割当情報を取得
+  // propertyName === "the Terrace 長浜" のときだけ表示（他物件ではスキップ）
+  (async () => {
+    try {
+      const token = new URLSearchParams(location.search).get('guest');
+      if (!token || !/^[a-f0-9]{32,}$/i.test(token)) return;
+
+      const res = await fetch(`https://minpaku-v2.web.app/api/public/guest-allocation/${encodeURIComponent(token)}`);
+      if (!res.ok) return; // 410 期限切れ等は静かにスキップ
+
+      const data = await res.json();
+      if (!data || data.propertyName !== 'the Terrace 長浜') return;
+
+      const spotMap = {
+        spot1: '1番',
+        spot5: '5番',
+        unpaved: '未舗装駐車場',
+        paid: '有料駐車場（カフェ）'
+      };
+
+      const card = document.getElementById('allocation-card');
+      const meta = document.getElementById('allocation-meta');
+      const list = document.getElementById('allocation-list');
+      const extras = document.getElementById('allocation-extras');
+
+      const checkIn = data.checkIn || '';
+      const checkOut = data.checkOut || '';
+      const guests = data.guestCount ? `${data.guestCount}名様` : '';
+      meta.textContent = [data.propertyName, `${checkIn} → ${checkOut}`, guests].filter(Boolean).join(' / ');
+
+      const alloc = Array.isArray(data.parkingAllocation) ? data.parkingAllocation : [];
+      if (alloc.length === 0) {
+        const li = document.createElement('li');
+        li.innerHTML = `<span class="spot-label">駐車場のご利用予定はありません（車以外でお越しの場合）</span>`;
+        list.appendChild(li);
+      } else {
+        alloc.forEach(a => {
+          const li = document.createElement('li');
+          const name = spotMap[a.spot] || a.spot;
+          li.innerHTML = `<span class="spot-name">${name}</span><span class="spot-label">${a.label || ''}</span>`;
+          list.appendChild(li);
+        });
+      }
+
+      if (data.paidParking === '利用する') {
+        const b = document.createElement('span');
+        b.className = 'badge';
+        b.textContent = '✅ 有料駐車場（カフェ）利用予定';
+        extras.appendChild(b);
+      }
+      if (data.bbq === '利用する') {
+        const b = document.createElement('span');
+        b.className = 'badge';
+        b.textContent = '✅ BBQ ご予約済み';
+        extras.appendChild(b);
+      }
+      if (data.bedChoice) {
+        const b = document.createElement('span');
+        b.className = 'badge';
+        b.textContent = `✅ ベッド希望: ${data.bedChoice}`;
+        extras.appendChild(b);
+      }
+
+      card.classList.add('show');
+      card.setAttribute('aria-hidden', 'false');
+    } catch (e) {
+      console.warn('guest allocation fetch failed', e);
+    }
+  })();
 </script>
 </body>
 </html>
